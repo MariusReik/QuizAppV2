@@ -12,25 +12,31 @@ import java.util.concurrent.Executors;
 public class PhotoEntryRepository {
 
     private PhotoEntryDao photoEntryDao;
-    private LiveData<List<PhotoEntry>> allEntries;
     private ExecutorService executorService;
 
     public PhotoEntryRepository(Application application) {
         AppDatabase db = AppDatabase.getDatabase(application);
         photoEntryDao = db.photoEntryDao();
-        allEntries = photoEntryDao.getAllEntries();
         executorService = Executors.newSingleThreadExecutor();
     }
 
+    // Returnerer alle oppføringer med standard sortering (A-Å)
     public LiveData<List<PhotoEntry>> getAllEntries() {
-        return allEntries;
+        return photoEntryDao.getAllEntriesSortedByNameAsc();
+    }
+
+    public LiveData<List<PhotoEntry>> getAllEntriesSortedByNameAsc() {
+        return photoEntryDao.getAllEntriesSortedByNameAsc();
+    }
+
+    public LiveData<List<PhotoEntry>> getAllEntriesSortedByNameDesc() {
+        return photoEntryDao.getAllEntriesSortedByNameDesc();
     }
 
     public void insert(PhotoEntry photoEntry) {
         executorService.execute(() -> photoEntryDao.insert(photoEntry));
     }
 
-    // Legg til denne metoden
     public void deleteById(long id) {
         executorService.execute(() -> photoEntryDao.deleteById(id));
     }

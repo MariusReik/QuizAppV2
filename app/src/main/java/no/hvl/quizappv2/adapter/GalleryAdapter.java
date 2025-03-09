@@ -6,14 +6,11 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
-
+import androidx.lifecycle.ViewModelProvider;
 import com.bumptech.glide.Glide;
-
 import java.util.List;
-
 import no.hvl.quizappv2.R;
 import no.hvl.quizappv2.entity.PhotoEntry;
 import no.hvl.quizappv2.view.GalleryActivity;

@@ -36,18 +36,25 @@ public class QuizActivity extends AppCompatActivity {
         viewModel.getCurrentQuestion().observe(this, question -> {
             if (question != null) {
                 questionTextView.setText(question.getQuestionText());
-                Glide.with(this).load(question.getPhotoUri()).into(photoImageView);
+
+                Glide.with(this)
+                        .load(question.getPhotoUri())
+                        .error(R.drawable.cute_fox)
+                        .into(photoImageView);
 
                 for (int i = 0; i < answerButtons.length; i++) {
                     answerButtons[i].setText(question.getAnswers()[i]);
                     int finalI = i;
                     answerButtons[i].setOnClickListener(v -> checkAnswer(finalI));
                 }
+            } else {
+                // Quizen er avsluttet
+                Toast.makeText(this, "Quiz avsluttet! Din score: " + viewModel.getScore().getValue(), Toast.LENGTH_LONG).show();
+                finish(); // Avslutt aktiviteten
             }
         });
 
         viewModel.getScore().observe(this, score -> {
-            Toast.makeText(this, "Score: " + score, Toast.LENGTH_SHORT).show();
         });
 
         viewModel.loadNextQuestion();
@@ -55,5 +62,11 @@ public class QuizActivity extends AppCompatActivity {
 
     private void checkAnswer(int selectedAnswerIndex) {
         viewModel.submitAnswer(selectedAnswerIndex);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        viewModel.finishQuiz();
     }
 }

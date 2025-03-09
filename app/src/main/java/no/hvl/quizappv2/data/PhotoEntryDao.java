@@ -15,10 +15,12 @@ public interface PhotoEntryDao {
     @Insert
     void insert(PhotoEntry photoEntry);
 
-    @Query("SELECT * FROM photo_entries ORDER BY name ASC")
-    LiveData<List<PhotoEntry>> getAllEntries();
+    @Query("SELECT * FROM photo_entries ORDER BY name ASC") // Sortering A-Å
+    LiveData<List<PhotoEntry>> getAllEntriesSortedByNameAsc();
 
-    // Legg til denne metoden
+    @Query("SELECT * FROM photo_entries ORDER BY name DESC") // Sortering Å-A
+    LiveData<List<PhotoEntry>> getAllEntriesSortedByNameDesc();
+
     @Query("DELETE FROM photo_entries WHERE id = :id")
     void deleteById(long id);
 }

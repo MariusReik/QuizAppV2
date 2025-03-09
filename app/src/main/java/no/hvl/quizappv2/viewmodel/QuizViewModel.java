@@ -62,6 +62,13 @@ public class QuizViewModel extends AndroidViewModel {
         loadNextQuestion();
     }
 
+    // Legg til denne metoden
+    public void finishQuiz() {
+        // Logikk for å avslutte quizen og vise resultatet
+        score.setValue(0); // Nullstill score
+        currentQuestion.setValue(null); // Nullstill spørsmålet
+    }
+
     public static class QuizQuestion {
         private String questionText;
         private String photoUri;
