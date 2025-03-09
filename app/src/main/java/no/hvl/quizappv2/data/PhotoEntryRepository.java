@@ -30,6 +30,7 @@ public class PhotoEntryRepository {
         executorService.execute(() -> photoEntryDao.insert(photoEntry));
     }
 
+    // Legg til denne metoden
     public void deleteById(long id) {
         executorService.execute(() -> photoEntryDao.deleteById(id));
     }

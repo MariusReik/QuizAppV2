@@ -18,6 +18,7 @@ public interface PhotoEntryDao {
     @Query("SELECT * FROM photo_entries ORDER BY name ASC")
     LiveData<List<PhotoEntry>> getAllEntries();
 
+    // Legg til denne metoden
     @Query("DELETE FROM photo_entries WHERE id = :id")
     void deleteById(long id);
 }

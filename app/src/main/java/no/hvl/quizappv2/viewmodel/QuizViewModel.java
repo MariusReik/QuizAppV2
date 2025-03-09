@@ -40,16 +40,16 @@ public class QuizViewModel extends AndroidViewModel {
 
             List<PhotoEntry> wrongEntries = allEntries.subList(1, Math.min(3, allEntries.size()));
             String[] answers = new String[3];
-            answers[0] = correctEntry.name;
-            answers[1] = wrongEntries.get(0).name;
-            answers[2] = wrongEntries.get(1).name;
+            answers[0] = correctEntry.getName();
+            answers[1] = wrongEntries.get(0).getName();
+            answers[2] = wrongEntries.get(1).getName();
             Collections.shuffle(List.of(answers));
 
-            correctAnswerIndex = List.of(answers).indexOf(correctEntry.name);
+            correctAnswerIndex = List.of(answers).indexOf(correctEntry.getName());
 
             currentQuestion.setValue(new QuizQuestion(
                     "Hvem er dette?",
-                    correctEntry.photoUri,
+                    correctEntry.getPhotoUri(),
                     answers
             ));
         }

@@ -8,6 +8,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+
 import no.hvl.quizappv2.R;
 import no.hvl.quizappv2.viewmodel.QuizViewModel;
 
