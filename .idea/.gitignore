@@ -1,0 +1,34 @@
+# Bygde filer og midlertidige filer
+*.apk
+*.aar
+*.ap_
+*.aab
+/build
+
+# Lokale konfigurasjonsfiler
+.gradle/
+.idea/
+*.iml
+local.properties
+
+# Midlertidige filer
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Genererte filer
+/gen
+/out
+/bin
+
+# Android Studio-spesifikke filer
+/navigation
+/captures
+
+# MacOS-spesifikke filer
+.DS_Store
+
+# Sensitive eller private filer
+keystore.jks
+google-services.json
