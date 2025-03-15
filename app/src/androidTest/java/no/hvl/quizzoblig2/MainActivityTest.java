@@ -1,40 +1,36 @@
 package no.hvl.quizzoblig2;
 
-import androidx.test.espresso.Espresso;
-import androidx.test.espresso.action.ViewActions;
-import androidx.test.espresso.matcher.ViewMatchers;
+import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.withId;
+
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import no.hvl.quizzoblig2.R;
 import no.hvl.quizzoblig2.ui.main.MainActivity;
 
-import static androidx.test.espresso.assertion.ViewAssertions.matches;
-import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
-
+@RunWith(AndroidJUnit4.class)
 public class MainActivityTest {
+
     @Rule
-    public ActivityScenarioRule<MainActivity> activityScenarioRule =
-            new ActivityScenarioRule<>(MainActivity.class);
+    public ActivityScenarioRule<MainActivity> activityRule = new ActivityScenarioRule<>(MainActivity.class);
 
     @Test
-    public void testNavigationToQuiz() {
-        Espresso.onView(ViewMatchers.withId(R.id.btnQuiz))
-                .perform(ViewActions.click());
-
-        // Sjekk at Quiz-fragmentet vises
-        Espresso.onView(ViewMatchers.withId(R.id.imageViewQuestion))
-                .check(matches(isDisplayed()));
+    public void testNavigateToGallery() {
+        onView(withId(R.id.btnGallery)).perform(click());
+        onView(withId(R.id.recyclerViewGallery)).check(matches(isDisplayed()));
     }
 
     @Test
-    public void testNavigationToGallery() {
-        Espresso.onView(ViewMatchers.withId(R.id.btnGallery))
-                .perform(ViewActions.click());
-
-        // Sjekk at Gallery-fragmentet vises
-        Espresso.onView(ViewMatchers.withId(R.id.recyclerViewGallery))
-                .check(matches(isDisplayed()));
+    public void testNavigateToQuiz() {
+        onView(withId(R.id.btnQuiz)).perform(click());
+        onView(withId(R.id.imageViewQuestion)).check(matches(isDisplayed()));
     }
 }

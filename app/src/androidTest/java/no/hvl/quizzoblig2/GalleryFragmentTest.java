@@ -21,6 +21,7 @@ import no.hvl.quizzoblig2.ui.gallery.GalleryFragment;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
@@ -63,3 +64,4 @@ public class GalleryFragmentTest {
                 .check(matches(isDisplayed()));
     }
 }
+

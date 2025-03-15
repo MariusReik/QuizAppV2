@@ -1,5 +1,6 @@
 package no.hvl.quizzoblig2.ui.quiz;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -55,7 +56,28 @@ public class QuizFragment extends Fragment {
 
         viewModel.isQuizFinished().observe(getViewLifecycleOwner(), isFinished -> {
             if (isFinished) {
-                Toast.makeText(getContext(), "Quiz avsluttet! Din score: " + viewModel.getScore().getValue(), Toast.LENGTH_LONG).show();
+                int currentScore = viewModel.getScore().getValue();
+                String message;
+
+                if (currentScore < 0) {
+                    message = "You need at least 3 images in your gallery to play the quiz.";
+                } else {
+                    message = "Your final score: " + currentScore;
+                }
+
+                new AlertDialog.Builder(getContext())
+                        .setTitle("Quiz Complete!")
+                        .setMessage(message)
+                        .setPositiveButton("Return to Main Menu", (dialog, which) -> {
+                            requireActivity().getSupportFragmentManager().popBackStack();
+                        })
+                        .setCancelable(false)
+                        .show();
+
+                // Disable answer buttons
+                buttonOption1.setEnabled(false);
+                buttonOption2.setEnabled(false);
+                buttonOption3.setEnabled(false);
             }
         });
 

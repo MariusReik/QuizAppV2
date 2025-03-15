@@ -32,7 +32,10 @@ public class QuizViewModel extends AndroidViewModel {
         repository.getAllGalleryItems().observeForever(items -> {
             quizItems = new ArrayList<>(items);
             if (quizItems.size() < 3) {
-                endQuiz();
+                // If there are too few items, show a message
+                quizFinished.setValue(true);
+                // Set a special score value to indicate not enough items
+                score.setValue(-1);
             } else {
                 score.setValue(0);
                 generateNextQuestion();
@@ -90,6 +93,20 @@ public class QuizViewModel extends AndroidViewModel {
 
     public LiveData<Boolean> isQuizFinished() {
         return quizFinished;
+    }
+
+    // Add this method for testing
+    public void setTestItem(String imageUri, String correctAnswerText) {
+        // For testing only
+        correctAnswer = new GalleryItem(correctAnswerText, imageUri);
+        currentImage.setValue(imageUri);
+
+        List<String> options = new ArrayList<>();
+        options.add(correctAnswerText);
+        options.add("Wrong Answer 1");
+        options.add("Wrong Answer 2");
+
+        answerOptions.setValue(options);
     }
 }
 

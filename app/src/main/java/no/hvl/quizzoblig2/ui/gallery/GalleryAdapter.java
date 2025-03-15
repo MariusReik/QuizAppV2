@@ -20,6 +20,17 @@ import no.hvl.quizzoblig2.data.db.GalleryItem;
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryViewHolder> {
     private final Context context;
     private List<GalleryItem> galleryItems;
+    private OnItemLongClickListener longClickListener;
+
+    // Add this interface
+    public interface OnItemLongClickListener {
+        void onItemLongClick(GalleryItem item);
+    }
+
+    // Add setter for the listener
+    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+        this.longClickListener = listener;
+    }
 
     public GalleryAdapter(Context context, List<GalleryItem> galleryItems) {
         this.context = context;
@@ -38,6 +49,15 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryV
         GalleryItem item = galleryItems.get(position);
         holder.textViewName.setText(item.name);
         Glide.with(context).load(item.imageUri).into(holder.imageView);
+
+        // Add long click listener
+        holder.itemView.setOnLongClickListener(v -> {
+            if (longClickListener != null) {
+                longClickListener.onItemLongClick(item);
+                return true;
+            }
+            return false;
+        });
     }
 
     @Override

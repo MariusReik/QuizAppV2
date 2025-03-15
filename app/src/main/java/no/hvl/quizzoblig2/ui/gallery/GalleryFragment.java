@@ -1,6 +1,7 @@
 package no.hvl.quizzoblig2.ui.gallery;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -45,6 +46,20 @@ public class GalleryFragment extends Fragment {
 
         RecyclerView recyclerView = root.findViewById(R.id.recyclerViewGallery);
         adapter = new GalleryAdapter(getContext(), new ArrayList<>());
+
+        // Set the long click listener for deletion
+        adapter.setOnItemLongClickListener(item -> {
+            // Show confirmation dialog
+            new AlertDialog.Builder(getContext())
+                    .setTitle("Delete Image")
+                    .setMessage("Are you sure you want to delete this image?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        viewModel.delete(item);
+                    })
+                    .setNegativeButton("No", null)
+                    .show();
+        });
+
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
