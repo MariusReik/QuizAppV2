@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -34,8 +35,10 @@ public class GalleryFragment extends Fragment {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri selectedImage = result.getData().getData();
                     if (selectedImage != null) {
-                        String imageName = "New Image " + System.currentTimeMillis();
-                        viewModel.insert(new GalleryItem(imageName, selectedImage.toString()));
+                        String imageName = "Image " + System.currentTimeMillis();
+                        GalleryItem item = new GalleryItem(imageName, selectedImage.toString());
+                        viewModel.insert(item);
+                        Toast.makeText(getContext(), "Image added successfully", Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -45,7 +48,10 @@ public class GalleryFragment extends Fragment {
         View root = inflater.inflate(R.layout.fragment_gallery, container, false);
 
         RecyclerView recyclerView = root.findViewById(R.id.recyclerViewGallery);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
         adapter = new GalleryAdapter(getContext(), new ArrayList<>());
+        recyclerView.setAdapter(adapter);
 
         // Set the long click listener for deletion
         adapter.setOnItemLongClickListener(item -> {
@@ -60,22 +66,41 @@ public class GalleryFragment extends Fragment {
                     .show();
         });
 
-        recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
         viewModel = new ViewModelProvider(this).get(GalleryViewModel.class);
+
+        // Observe unsorted gallery items by default
         viewModel.getAllGalleryItems().observe(getViewLifecycleOwner(), galleryItems -> {
-            adapter.updateGalleryItems(galleryItems);
+            if (galleryItems != null && !galleryItems.isEmpty()) {
+                adapter.updateGalleryItems(galleryItems);
+            } else {
+                Toast.makeText(getContext(), "No images in gallery", Toast.LENGTH_SHORT).show();
+            }
         });
 
         Button btnAdd = root.findViewById(R.id.btnAdd);
         btnAdd.setOnClickListener(v -> openImagePicker());
 
         Button btnSortAZ = root.findViewById(R.id.btnSortAZ);
-        btnSortAZ.setOnClickListener(v -> viewModel.sortGalleryItems(true));
+        btnSortAZ.setOnClickListener(v -> {
+            viewModel.sortGalleryItems(true);
+            // Switch to observing sorted items
+            viewModel.getSortedGalleryItems().observe(getViewLifecycleOwner(), items -> {
+                if (items != null) {
+                    adapter.updateGalleryItems(items);
+                }
+            });
+        });
 
         Button btnSortZA = root.findViewById(R.id.btnSortZA);
-        btnSortZA.setOnClickListener(v -> viewModel.sortGalleryItems(false));
+        btnSortZA.setOnClickListener(v -> {
+            viewModel.sortGalleryItems(false);
+            // Switch to observing sorted items
+            viewModel.getSortedGalleryItems().observe(getViewLifecycleOwner(), items -> {
+                if (items != null) {
+                    adapter.updateGalleryItems(items);
+                }
+            });
+        });
 
         return root;
     }

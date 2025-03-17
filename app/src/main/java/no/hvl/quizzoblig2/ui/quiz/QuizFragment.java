@@ -1,7 +1,9 @@
 package no.hvl.quizzoblig2.ui.quiz;
 
 import android.app.AlertDialog;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,10 +17,14 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
 
 import no.hvl.quizzoblig2.R;
 
 public class QuizFragment extends Fragment {
+    private static final String TAG = "QuizFragment";
+
     private QuizViewModel viewModel;
     private ImageView imageViewQuestion;
     private Button buttonOption1, buttonOption2, buttonOption3;
@@ -34,11 +40,31 @@ public class QuizFragment extends Fragment {
         buttonOption3 = root.findViewById(R.id.buttonOption3);
         textViewScore = root.findViewById(R.id.textViewScore);
 
+        // Set placeholder image
+        imageViewQuestion.setImageResource(android.R.drawable.ic_menu_gallery);
+
         viewModel = new ViewModelProvider(this).get(QuizViewModel.class);
 
         viewModel.getCurrentImage().observe(getViewLifecycleOwner(), imageUri -> {
-            if (imageUri != null) {
-                Glide.with(this).load(imageUri).into(imageViewQuestion);
+            if (imageUri != null && !imageUri.isEmpty()) {
+                Log.d(TAG, "Loading question image: " + imageUri);
+                try {
+                    RequestOptions options = new RequestOptions()
+                            .diskCacheStrategy(DiskCacheStrategy.ALL)
+                            .placeholder(android.R.drawable.ic_menu_gallery)
+                            .error(android.R.drawable.ic_dialog_alert);
+
+                    Glide.with(this)
+                            .load(Uri.parse(imageUri))
+                            .apply(options)
+                            .into(imageViewQuestion);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error loading image: " + e.getMessage());
+                    imageViewQuestion.setImageResource(android.R.drawable.ic_dialog_alert);
+                }
+            } else {
+                Log.w(TAG, "Null or empty image URI");
+                imageViewQuestion.setImageResource(android.R.drawable.ic_dialog_alert);
             }
         });
 
@@ -47,6 +73,11 @@ public class QuizFragment extends Fragment {
                 buttonOption1.setText(options.get(0));
                 buttonOption2.setText(options.get(1));
                 buttonOption3.setText(options.get(2));
+
+                // Enable buttons
+                buttonOption1.setEnabled(true);
+                buttonOption2.setEnabled(true);
+                buttonOption3.setEnabled(true);
             }
         });
 
@@ -56,11 +87,13 @@ public class QuizFragment extends Fragment {
 
         viewModel.isQuizFinished().observe(getViewLifecycleOwner(), isFinished -> {
             if (isFinished) {
-                int currentScore = viewModel.getScore().getValue();
+                int currentScore = viewModel.getScore().getValue() != null ?
+                        viewModel.getScore().getValue() : 0;
                 String message;
 
                 if (currentScore < 0) {
-                    message = "You need at least 3 images in your gallery to play the quiz.";
+                    message = "You need at least 3 images in your gallery to play the quiz. " +
+                            "Please add more images to your gallery first.";
                 } else {
                     message = "Your final score: " + currentScore;
                 }
@@ -85,9 +118,18 @@ public class QuizFragment extends Fragment {
         buttonOption2.setOnClickListener(v -> viewModel.answerQuestion(buttonOption2.getText().toString()));
         buttonOption3.setOnClickListener(v -> viewModel.answerQuestion(buttonOption3.getText().toString()));
 
+        // Start the quiz
         viewModel.startQuiz();
 
         return root;
     }
-}
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Restart quiz if returning to this fragment
+        if (viewModel != null && viewModel.isQuizFinished().getValue() == Boolean.TRUE) {
+            viewModel.startQuiz();
+        }
+    }
+}

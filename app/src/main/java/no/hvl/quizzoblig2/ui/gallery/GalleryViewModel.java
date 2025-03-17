@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -25,7 +26,11 @@ public class GalleryViewModel extends AndroidViewModel {
         galleryItemsLiveData = repository.getAllGalleryItems();
 
         // Initialize the sorted items with the repository data
-        galleryItemsObserver = sortedGalleryItems::setValue;
+        galleryItemsObserver = items -> {
+            if (items != null) {
+                sortedGalleryItems.setValue(new ArrayList<>(items));
+            }
+        };
         galleryItemsLiveData.observeForever(galleryItemsObserver);
     }
 
@@ -48,8 +53,10 @@ public class GalleryViewModel extends AndroidViewModel {
     public void sortGalleryItems(boolean ascending) {
         List<GalleryItem> items = sortedGalleryItems.getValue();
         if (items != null) {
-            Collections.sort(items, (a, b) -> ascending ? a.name.compareTo(b.name) : b.name.compareTo(a.name));
-            sortedGalleryItems.setValue(items);
+            List<GalleryItem> sortedList = new ArrayList<>(items);
+            Collections.sort(sortedList, (a, b) ->
+                    ascending ? a.name.compareTo(b.name) : b.name.compareTo(a.name));
+            sortedGalleryItems.setValue(sortedList);
         }
     }
 
