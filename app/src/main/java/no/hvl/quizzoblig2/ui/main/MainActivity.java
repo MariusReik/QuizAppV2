@@ -19,6 +19,8 @@ import no.hvl.quizzoblig2.ui.quiz.QuizFragment;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private Button btnGallery, btnQuiz;
+    private View mainContent;
+    private View fragmentContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,15 +29,16 @@ public class MainActivity extends AppCompatActivity {
 
         btnGallery = findViewById(R.id.btnGallery);
         btnQuiz = findViewById(R.id.btnQuiz);
+        mainContent = findViewById(R.id.main_content);
+        fragmentContainer = findViewById(R.id.fragment_container);
 
         btnGallery.setOnClickListener(v -> openFragment(new GalleryFragment()));
         btnQuiz.setOnClickListener(v -> openFragment(new QuizFragment()));
 
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-            // Show buttons only if there are no active fragments
             if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
-                btnGallery.setVisibility(View.VISIBLE);
-                btnQuiz.setVisibility(View.VISIBLE);
+                // Show main menu if there are no fragments
+                showMainMenu(true);
             }
         });
 
@@ -76,24 +79,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openFragment(Fragment fragment) {
+        // Show fragment container and hide main content
+        showMainMenu(false);
+
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-
         transaction.replace(R.id.fragment_container, fragment);
-        transaction.addToBackStack(null);  // Add to back stack so we can go back
+        transaction.addToBackStack(null);
         transaction.commit();
+    }
 
-        // Hide buttons when a fragment opens
-        btnGallery.setVisibility(View.GONE);
-        btnQuiz.setVisibility(View.GONE);
+    private void showMainMenu(boolean show) {
+        mainContent.setVisibility(show ? View.VISIBLE : View.GONE);
+        fragmentContainer.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 
     @Override
     public void onBackPressed() {
         if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-            getSupportFragmentManager().popBackStack();  // Go back to previous fragment
+            getSupportFragmentManager().popBackStack();
         } else {
-            super.onBackPressed();  // Close app if we're on the main screen
+            super.onBackPressed();
         }
     }
 }

@@ -10,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -27,6 +26,7 @@ public class QuizFragment extends Fragment {
 
     private QuizViewModel viewModel;
     private ImageView imageViewQuestion;
+    private TextView textViewQuestion;
     private Button buttonOption1, buttonOption2, buttonOption3;
     private TextView textViewScore;
 
@@ -35,10 +35,14 @@ public class QuizFragment extends Fragment {
         View root = inflater.inflate(R.layout.fragment_quiz, container, false);
 
         imageViewQuestion = root.findViewById(R.id.imageViewQuestion);
+        textViewQuestion = root.findViewById(R.id.textViewQuestion);
         buttonOption1 = root.findViewById(R.id.buttonOption1);
         buttonOption2 = root.findViewById(R.id.buttonOption2);
         buttonOption3 = root.findViewById(R.id.buttonOption3);
         textViewScore = root.findViewById(R.id.textViewScore);
+
+        // Set the question text
+        textViewQuestion.setText("What animal is this?");
 
         // Set placeholder image
         imageViewQuestion.setImageResource(android.R.drawable.ic_menu_gallery);
