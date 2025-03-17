@@ -8,7 +8,7 @@ Tests that verify users can manage images in the gallery.
 
 **Test Results**: All tests passed (2/2) in 8 seconds
 
-![Gallery Tests Results](./docs/gallery_test_results.png)
+![Gallery Tests Results](./docs/Dat153GalleryFragTest.png)
 
 ## Navigation Tests (MainActivityTest)
 Tests that verify navigation between the main screens of the application.
@@ -18,7 +18,7 @@ Tests that verify navigation between the main screens of the application.
 
 **Test Results**: All tests passed (2/2) in 9 seconds
 
-![Navigation Tests Results](./docs/navigation_test_results.png)
+![Navigation Tests Results](./docs/Dat153MainTest.png)
 
 ## Quiz Functionality Tests (QuizFragmentTest)
 Tests that verify the quiz scoring system works correctly.
@@ -28,8 +28,7 @@ Tests that verify the quiz scoring system works correctly.
 
 **Test Results**: All tests passed (2/2) in 10 seconds
 
-![Quiz Tests Results](./docs/quiz_test_results.png)
+![Quiz Tests Results](./docs/Dat153QuizFragTest.png)
 
 ---
-
 
