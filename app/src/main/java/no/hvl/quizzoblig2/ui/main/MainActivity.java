@@ -18,9 +18,12 @@ import no.hvl.quizzoblig2.ui.quiz.QuizFragment;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
+    private static final String CURRENT_FRAGMENT = "current_fragment";
+
     private Button btnGallery, btnQuiz;
     private View mainContent;
     private View fragmentContainer;
+    private String currentFragmentTag = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,18 +35,38 @@ public class MainActivity extends AppCompatActivity {
         mainContent = findViewById(R.id.main_content);
         fragmentContainer = findViewById(R.id.fragment_container);
 
-        btnGallery.setOnClickListener(v -> openFragment(new GalleryFragment()));
-        btnQuiz.setOnClickListener(v -> openFragment(new QuizFragment()));
+        btnGallery.setOnClickListener(v -> openFragment(new GalleryFragment(), "gallery"));
+        btnQuiz.setOnClickListener(v -> openFragment(new QuizFragment(), "quiz"));
+
+        // Restore fragment state if there was one
+        if (savedInstanceState != null) {
+            currentFragmentTag = savedInstanceState.getString(CURRENT_FRAGMENT);
+
+            // If we had an active fragment before, restore UI state
+            if (currentFragmentTag != null) {
+                showMainMenu(false);
+            }
+        }
 
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
                 // Show main menu if there are no fragments
                 showMainMenu(true);
+                currentFragmentTag = null;
             }
         });
 
         // Add sample images if database is empty
         addSampleImages();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Save which fragment was active
+        if (currentFragmentTag != null) {
+            outState.putString(CURRENT_FRAGMENT, currentFragmentTag);
+        }
     }
 
     private void addSampleImages() {
@@ -78,13 +101,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void openFragment(Fragment fragment) {
+    private void openFragment(Fragment fragment, String tag) {
         // Show fragment container and hide main content
         showMainMenu(false);
+        currentFragmentTag = tag;
 
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragment_container, fragment);
+        transaction.replace(R.id.fragment_container, fragment, tag);
         transaction.addToBackStack(null);
         transaction.commit();
     }

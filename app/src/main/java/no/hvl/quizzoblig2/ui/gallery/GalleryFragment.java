@@ -29,6 +29,8 @@ import no.hvl.quizzoblig2.data.db.GalleryItem;
 public class GalleryFragment extends Fragment {
     private GalleryViewModel viewModel;
     private GalleryAdapter adapter;
+    private boolean isSortedAZ = false;
+    private boolean isSortedZA = false;
 
     private final ActivityResultLauncher<Intent> imagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -44,7 +46,18 @@ public class GalleryFragment extends Fragment {
             });
 
     @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Restore sort state if available
+        if (savedInstanceState != null) {
+            isSortedAZ = savedInstanceState.getBoolean("isSortedAZ", false);
+            isSortedZA = savedInstanceState.getBoolean("isSortedZA", false);
+        }
+    }
+
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // Use the generic identifier to let Android choose the appropriate layout
         View root = inflater.inflate(R.layout.fragment_gallery, container, false);
 
         RecyclerView recyclerView = root.findViewById(R.id.recyclerViewGallery);
@@ -68,7 +81,44 @@ public class GalleryFragment extends Fragment {
 
         viewModel = new ViewModelProvider(this).get(GalleryViewModel.class);
 
-        // Observe unsorted gallery items by default
+        // Observe gallery items based on the previous sort state
+        if (isSortedAZ) {
+            viewModel.sortGalleryItems(true);
+            observeSortedItems();
+        } else if (isSortedZA) {
+            viewModel.sortGalleryItems(false);
+            observeSortedItems();
+        } else {
+            observeUnsortedItems();
+        }
+
+        Button btnAdd = root.findViewById(R.id.btnAdd);
+        btnAdd.setOnClickListener(v -> openImagePicker());
+
+        Button btnSortAZ = root.findViewById(R.id.btnSortAZ);
+        btnSortAZ.setOnClickListener(v -> {
+            isSortedAZ = true;
+            isSortedZA = false;
+            viewModel.sortGalleryItems(true);
+            observeSortedItems();
+        });
+
+        Button btnSortZA = root.findViewById(R.id.btnSortZA);
+        btnSortZA.setOnClickListener(v -> {
+            isSortedZA = true;
+            isSortedAZ = false;
+            viewModel.sortGalleryItems(false);
+            observeSortedItems();
+        });
+
+        return root;
+    }
+
+    private void observeUnsortedItems() {
+        // Clear any existing observers
+        viewModel.getSortedGalleryItems().removeObservers(getViewLifecycleOwner());
+
+        // Observe unsorted gallery items
         viewModel.getAllGalleryItems().observe(getViewLifecycleOwner(), galleryItems -> {
             if (galleryItems != null && !galleryItems.isEmpty()) {
                 adapter.updateGalleryItems(galleryItems);
@@ -76,33 +126,26 @@ public class GalleryFragment extends Fragment {
                 Toast.makeText(getContext(), "No images in gallery", Toast.LENGTH_SHORT).show();
             }
         });
+    }
 
-        Button btnAdd = root.findViewById(R.id.btnAdd);
-        btnAdd.setOnClickListener(v -> openImagePicker());
+    private void observeSortedItems() {
+        // Clear any existing observers
+        viewModel.getAllGalleryItems().removeObservers(getViewLifecycleOwner());
 
-        Button btnSortAZ = root.findViewById(R.id.btnSortAZ);
-        btnSortAZ.setOnClickListener(v -> {
-            viewModel.sortGalleryItems(true);
-            // Switch to observing sorted items
-            viewModel.getSortedGalleryItems().observe(getViewLifecycleOwner(), items -> {
-                if (items != null) {
-                    adapter.updateGalleryItems(items);
-                }
-            });
+        // Switch to observing sorted items
+        viewModel.getSortedGalleryItems().observe(getViewLifecycleOwner(), items -> {
+            if (items != null) {
+                adapter.updateGalleryItems(items);
+            }
         });
+    }
 
-        Button btnSortZA = root.findViewById(R.id.btnSortZA);
-        btnSortZA.setOnClickListener(v -> {
-            viewModel.sortGalleryItems(false);
-            // Switch to observing sorted items
-            viewModel.getSortedGalleryItems().observe(getViewLifecycleOwner(), items -> {
-                if (items != null) {
-                    adapter.updateGalleryItems(items);
-                }
-            });
-        });
-
-        return root;
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Save sort state
+        outState.putBoolean("isSortedAZ", isSortedAZ);
+        outState.putBoolean("isSortedZA", isSortedZA);
     }
 
     private void openImagePicker() {

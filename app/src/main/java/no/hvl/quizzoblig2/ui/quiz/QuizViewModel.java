@@ -29,12 +29,18 @@ public class QuizViewModel extends AndroidViewModel {
     private GalleryItem correctAnswer;
     private Observer<List<GalleryItem>> galleryItemsObserver;
 
+    // Add state tracking to avoid reloading on rotation
+    private boolean quizInitialized = false;
+
     public QuizViewModel(@NonNull Application application) {
         super(application);
         repository = new GalleryRepository(application);
     }
 
     public void startQuiz() {
+        // Don't restart if already initialized (prevents new questions on rotation)
+        if (quizInitialized) return;
+
         // Reset quiz state
         score.setValue(0);
         quizFinished.setValue(false);
@@ -60,8 +66,10 @@ public class QuizViewModel extends AndroidViewModel {
                 } else {
                     Log.d(TAG, "Starting quiz with " + quizItems.size() + " items");
                     // Start the quiz
-                    score.setValue(0);
-                    generateNextQuestion();
+                    if (score.getValue() == null || score.getValue() == 0) {
+                        score.setValue(0);
+                        generateNextQuestion();
+                    }
                 }
             } else {
                 Log.w(TAG, "No images available for quiz");
@@ -72,6 +80,33 @@ public class QuizViewModel extends AndroidViewModel {
 
         // Start observing
         repository.getAllGalleryItems().observeForever(galleryItemsObserver);
+        quizInitialized = true;
+    }
+
+    // Add method to force restart quiz (for explicit restart requests)
+    public void restartQuiz() {
+        quizInitialized = false;
+        startQuiz();
+    }
+
+    // Add this method to set score directly (for state restoration)
+    public void setScore(int newScore) {
+        score.setValue(newScore);
+    }
+
+    // Add this method to set quiz finished state directly (for state restoration)
+    public void setQuizFinished(boolean finished) {
+        quizFinished.setValue(finished);
+    }
+
+    // New method to restore the current question
+    public void restoreCurrentQuestion(String imageUri, String correctAnswerText, List<String> options) {
+        if (imageUri != null && correctAnswerText != null && options != null) {
+            correctAnswer = new GalleryItem(correctAnswerText, imageUri);
+            currentImage.setValue(imageUri);
+            answerOptions.setValue(options);
+            quizInitialized = true;
+        }
     }
 
     private void generateNextQuestion() {
@@ -91,29 +126,62 @@ public class QuizViewModel extends AndroidViewModel {
         // Update the image
         currentImage.setValue(correctAnswer.imageUri);
 
-        // Prepare answer options
+        // Prepare answer options with the correct answer
         List<String> options = new ArrayList<>();
         options.add(correctAnswer.name);
 
-        // Get random alternatives from remaining items
-        List<GalleryItem> tempItems = new ArrayList<>(quizItems);
-        Collections.shuffle(tempItems);
+        try {
+            // Get all possible alternatives
+            List<String> allAlternatives = new ArrayList<>();
 
-        for (int i = 0; i < Math.min(2, tempItems.size()); i++) {
-            options.add(tempItems.get(i).name);
+            // First try to use alternatives from the remaining quiz items
+            for (GalleryItem item : quizItems) {
+                if (!item.name.equals(correctAnswer.name)) {
+                    allAlternatives.add(item.name);
+                }
+            }
+
+            // If we don't have enough alternatives, add predefined options
+            if (allAlternatives.size() < 2) {
+                // Add predefined animal names that aren't the correct answer
+                String[] predefinedNames = {"Dog", "Cat", "Fox", "Bear", "Wolf", "Tiger",
+                        "Lion", "Elephant", "Giraffe", "Zebra", "Monkey"};
+
+                for (String name : predefinedNames) {
+                    if (!name.equals(correctAnswer.name) && !allAlternatives.contains(name)) {
+                        allAlternatives.add(name);
+                    }
+                }
+            }
+
+            // Shuffle and take up to 2 alternatives
+            Collections.shuffle(allAlternatives);
+            for (int i = 0; i < Math.min(2, allAlternatives.size()); i++) {
+                options.add(allAlternatives.get(i));
+            }
+
+            // If we still don't have 3 options, add generic options
+            while (options.size() < 3) {
+                options.add("Animal " + options.size());
+            }
+
+            // Randomize option order
+            Collections.shuffle(options);
+
+            // Update the UI
+            answerOptions.setValue(options);
+
+        } catch (Exception e) {
+            // Fallback in case of any errors
+            Log.e(TAG, "Error generating question options: " + e.getMessage());
+
+            List<String> fallbackOptions = new ArrayList<>();
+            fallbackOptions.add(correctAnswer.name);
+            fallbackOptions.add("Animal 1");
+            fallbackOptions.add("Animal 2");
+            Collections.shuffle(fallbackOptions);
+            answerOptions.setValue(fallbackOptions);
         }
-
-        // If we don't have enough alternatives, add dummy options
-        while (options.size() < 3) {
-            options.add("Option " + (options.size() + 1));
-        }
-
-        // Randomize option order
-        Collections.shuffle(options);
-        Log.d(TAG, "Answer options: " + options);
-
-        // Update the UI
-        answerOptions.setValue(options);
     }
 
     public void answerQuestion(String selectedAnswer) {
@@ -151,6 +219,10 @@ public class QuizViewModel extends AndroidViewModel {
         return quizFinished;
     }
 
+    public String getCurrentCorrectAnswer() {
+        return correctAnswer != null ? correctAnswer.name : null;
+    }
+
     // Add this method for testing
     public void setTestItem(String imageUri, String correctAnswerText) {
         // For testing only
@@ -174,7 +246,3 @@ public class QuizViewModel extends AndroidViewModel {
         }
     }
 }
-
-
-
-
