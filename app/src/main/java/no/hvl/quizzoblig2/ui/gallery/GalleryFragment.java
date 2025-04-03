@@ -12,6 +12,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import androidx.core.content.ContextCompat;
+import android.util.Log;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -21,12 +27,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import no.hvl.quizzoblig2.R;
 import no.hvl.quizzoblig2.data.db.GalleryItem;
 
 public class GalleryFragment extends Fragment {
+    private static final String TAG = "GalleryFragment";
+
     private GalleryViewModel viewModel;
     private GalleryAdapter adapter;
     private boolean isSortedAZ = false;
@@ -37,11 +44,39 @@ public class GalleryFragment extends Fragment {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri selectedImage = result.getData().getData();
                     if (selectedImage != null) {
-                        String imageName = "Image " + System.currentTimeMillis();
-                        GalleryItem item = new GalleryItem(imageName, selectedImage.toString());
-                        viewModel.insert(item);
-                        Toast.makeText(getContext(), "Image added successfully", Toast.LENGTH_SHORT).show();
+                        try {
+                            // Only take persistable permission for content:// URIs
+                            if (selectedImage.toString().startsWith("content://")) {
+                                // Use just the READ permission flag directly
+                                requireActivity().getContentResolver()
+                                        .takePersistableUriPermission(selectedImage,
+                                                Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            }
+
+                            String imageName = "Image " + System.currentTimeMillis();
+                            GalleryItem item = new GalleryItem(imageName, selectedImage.toString());
+                            viewModel.insert(item);
+                            Toast.makeText(getContext(), "Image added successfully", Toast.LENGTH_SHORT).show();
+                        } catch (SecurityException e) {
+                            Log.e(TAG, "Failed to take persistable permission: " + e.getMessage());
+                            // Still try to add the image even if we couldn't get persistable permission
+                            String imageName = "Image " + System.currentTimeMillis();
+                            GalleryItem item = new GalleryItem(imageName, selectedImage.toString());
+                            viewModel.insert(item);
+                            Toast.makeText(getContext(), "Image added but may not be accessible after restart", Toast.LENGTH_SHORT).show();
+                        }
                     }
+                }
+            });
+
+    // Add a permission launcher - simplified to expression lambda
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    imagePickerLauncher.launch(intent);
+                } else {
+                    Toast.makeText(getContext(), "Permission denied, cannot select images", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -72,9 +107,7 @@ public class GalleryFragment extends Fragment {
             new AlertDialog.Builder(getContext())
                     .setTitle("Delete Image")
                     .setMessage("Are you sure you want to delete this image?")
-                    .setPositiveButton("Yes", (dialog, which) -> {
-                        viewModel.delete(item);
-                    })
+                    .setPositiveButton("Yes", (dialog, which) -> viewModel.delete(item))
                     .setNegativeButton("No", null)
                     .show();
         });
@@ -149,11 +182,19 @@ public class GalleryFragment extends Fragment {
     }
 
     private void openImagePicker() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        imagePickerLauncher.launch(intent);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+            imagePickerLauncher.launch(intent);
+        } else {
+            // For older versions, need to request permission first
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+            } else {
+                // Permission already granted, proceed
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                imagePickerLauncher.launch(intent);
+            }
+        }
     }
 }
-
-
-
-
