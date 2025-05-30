@@ -47,7 +47,7 @@ public class MainActivityTest {
         Espresso.onView(ViewMatchers.withId(R.id.btnQuiz))
                 .perform(ViewActions.click());
 
-        // Sjekk at Quiz-fragmentet vises
+        // Check if quizfragment shows
         Espresso.onView(ViewMatchers.withId(R.id.imageViewQuestion))
                 .check(matches(isDisplayed()));
     }
@@ -57,7 +57,7 @@ public class MainActivityTest {
         Espresso.onView(ViewMatchers.withId(R.id.btnGallery))
                 .perform(ViewActions.click());
 
-        // Sjekk at Gallery-fragmentet vises
+        // Check if Gallery-fragmentet shows
         Espresso.onView(ViewMatchers.withId(R.id.recyclerViewGallery))
                 .check(matches(isDisplayed()));
     }
