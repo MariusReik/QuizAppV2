@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import no.hvl.quizzoblig2.R;
 import no.hvl.quizzoblig2.data.GalleryRepository;
 import no.hvl.quizzoblig2.data.db.GalleryItem;
 
@@ -28,204 +29,199 @@ public class QuizViewModel extends AndroidViewModel {
     private List<GalleryItem> quizItems = new ArrayList<>();
     private GalleryItem correctAnswer;
     private Observer<List<GalleryItem>> galleryItemsObserver;
-
-    // Add state tracking to avoid reloading on rotation
     private boolean quizInitialized = false;
 
+    // Initialiserer ViewModel med repository og logger start
     public QuizViewModel(@NonNull Application application) {
         super(application);
         repository = new GalleryRepository(application);
+        Log.d(TAG, "QuizViewModel opprettet");
     }
 
+    // Starter quizen eller fortsetter eksisterende quiz
     public void startQuiz() {
-        // Don't restart if already initialized (prevents new questions on rotation)
-        if (quizInitialized) return;
+        if (quizInitialized) {
+            Log.d(TAG, "Quiz allerede initialisert");
+            return;
+        }
 
-        // Reset quiz state
+        resetQuizState();
+        loadGalleryItemsAndStartQuiz();
+    }
+
+    // Nullstiller alle quiz-verdier til startposisjon
+    private void resetQuizState() {
         score.setValue(0);
         quizFinished.setValue(false);
+        quizItems.clear();
+        correctAnswer = null;
+        Log.d(TAG, "Quiz-tilstand nullstilt");
+    }
 
-        // Remove previous observer if exists
+    // Laster gallery items og starter quiz med disse eller fallback bilder
+    private void loadGalleryItemsAndStartQuiz() {
         if (galleryItemsObserver != null) {
             repository.getAllGalleryItems().removeObserver(galleryItemsObserver);
         }
 
-        // Create new observer
         galleryItemsObserver = items -> {
-            Log.d(TAG, "Loaded gallery items: " + (items != null ? items.size() : 0));
+            Log.d(TAG, "Gallery items lastet: " + (items != null ? items.size() : 0));
 
-            if (items != null && !items.isEmpty()) {
-                // Make a copy to avoid modification issues
+            if (items != null && items.size() >= 3) {
+                // Bruk gallery items hvis det er nok
                 quizItems = new ArrayList<>(items);
-
-                if (quizItems.size() < 3) {
-                    Log.w(TAG, "Not enough images for quiz (minimum 3): " + quizItems.size());
-                    // Not enough items, show message
-                    quizFinished.setValue(true);
-                    score.setValue(-1);
-                } else {
-                    Log.d(TAG, "Starting quiz with " + quizItems.size() + " items");
-                    // Start the quiz
-                    if (score.getValue() == null || score.getValue() == 0) {
-                        score.setValue(0);
-                        generateNextQuestion();
-                    }
-                }
+                Log.d(TAG, "Bruker gallery items for quiz");
             } else {
-                Log.w(TAG, "No images available for quiz");
-                quizFinished.setValue(true);
-                score.setValue(-1);
+                // Bruk drawable fallback hvis ikke nok items
+                quizItems = createFallbackItems();
+                Log.d(TAG, "Bruker fallback items for quiz");
             }
+
+            Collections.shuffle(quizItems);
+            generateNextQuestion();
+            quizInitialized = true;
         };
 
-        // Start observing
         repository.getAllGalleryItems().observeForever(galleryItemsObserver);
-        quizInitialized = true;
     }
 
-    // Add method to force restart quiz (for explicit restart requests)
-    public void restartQuiz() {
-        quizInitialized = false;
-        startQuiz();
+    // Lager fallback items fra de 3 drawable ressursene
+    private List<GalleryItem> createFallbackItems() {
+        List<GalleryItem> fallbackItems = new ArrayList<>();
+
+        String packageName = getApplication().getPackageName();
+
+        // Opprett URI-er for de 3 drawable ressursene
+        String dogUri = "android.resource://" + packageName + "/" + R.drawable.dog;
+        String catUri = "android.resource://" + packageName + "/" + R.drawable.cat;
+        String foxUri = "android.resource://" + packageName + "/" + R.drawable.fox;
+
+        fallbackItems.add(new GalleryItem("Dog", dogUri));
+        fallbackItems.add(new GalleryItem("Cat", catUri));
+        fallbackItems.add(new GalleryItem("Fox", foxUri));
+
+        Log.d(TAG, "Opprettet " + fallbackItems.size() + " fallback items");
+        return fallbackItems;
     }
 
-    // Add this method to set score directly (for state restoration)
-    public void setScore(int newScore) {
-        score.setValue(newScore);
-    }
-
-    // Add this method to set quiz finished state directly (for state restoration)
-    public void setQuizFinished(boolean finished) {
-        quizFinished.setValue(finished);
-    }
-
-    // New method to restore the current question
-    public void restoreCurrentQuestion(String imageUri, String correctAnswerText, List<String> options) {
-        if (imageUri != null && correctAnswerText != null && options != null) {
-            correctAnswer = new GalleryItem(correctAnswerText, imageUri);
-            currentImage.setValue(imageUri);
-            answerOptions.setValue(options);
-            quizInitialized = true;
-        }
-    }
-
+    // Genererer neste spørsmål med bilde og svaralternativer
     private void generateNextQuestion() {
         if (quizItems == null || quizItems.isEmpty()) {
-            Log.d(TAG, "No more quiz items, ending quiz");
+            Log.d(TAG, "Ingen flere spørsmål, avslutter quiz");
             endQuiz();
             return;
         }
 
-        // Shuffle the remaining items
-        Collections.shuffle(quizItems);
-
-        // Get one item as the correct answer
+        // Velg tilfeldig item som riktig svar
         correctAnswer = quizItems.remove(0);
-        Log.d(TAG, "Selected question: " + correctAnswer.name + ", URI: " + correctAnswer.imageUri);
-
-        // Update the image
         currentImage.setValue(correctAnswer.imageUri);
 
-        // Prepare answer options with the correct answer
+        // Generer svaralternativer
+        List<String> options = createAnswerOptions();
+        answerOptions.setValue(options);
+
+        Log.d(TAG, "Generert spørsmål for: " + correctAnswer.name);
+    }
+
+    // Lager 3 svaralternativer hvor ett er riktig
+    private List<String> createAnswerOptions() {
         List<String> options = new ArrayList<>();
         options.add(correctAnswer.name);
 
-        try {
-            // Get all possible alternatives
-            List<String> allAlternatives = new ArrayList<>();
-
-            // First try to use alternatives from the remaining quiz items
-            for (GalleryItem item : quizItems) {
-                if (!item.name.equals(correctAnswer.name)) {
-                    allAlternatives.add(item.name);
-                }
+        // Samle alternative svar fra gjenværende items
+        List<String> alternatives = new ArrayList<>();
+        for (GalleryItem item : quizItems) {
+            if (!item.name.equals(correctAnswer.name)) {
+                alternatives.add(item.name);
             }
-
-            // If we don't have enough alternatives, add predefined options
-            if (allAlternatives.size() < 2) {
-                // Add predefined animal names that aren't the correct answer
-                String[] predefinedNames = {"Dog", "Cat", "Fox", "Bear", "Wolf", "Tiger",
-                        "Lion", "Elephant", "Giraffe", "Zebra", "Monkey"};
-
-                for (String name : predefinedNames) {
-                    if (!name.equals(correctAnswer.name) && !allAlternatives.contains(name)) {
-                        allAlternatives.add(name);
-                    }
-                }
-            }
-
-            // Shuffle and take up to 2 alternatives
-            Collections.shuffle(allAlternatives);
-            for (int i = 0; i < Math.min(2, allAlternatives.size()); i++) {
-                options.add(allAlternatives.get(i));
-            }
-
-            // If we still don't have 3 options, add generic options
-            while (options.size() < 3) {
-                options.add("Animal " + options.size());
-            }
-
-            // Randomize option order
-            Collections.shuffle(options);
-
-            // Update the UI
-            answerOptions.setValue(options);
-
-        } catch (Exception e) {
-            // Fallback in case of any errors
-            Log.e(TAG, "Error generating question options: " + e.getMessage());
-
-            List<String> fallbackOptions = new ArrayList<>();
-            fallbackOptions.add(correctAnswer.name);
-            fallbackOptions.add("Animal 1");
-            fallbackOptions.add("Animal 2");
-            Collections.shuffle(fallbackOptions);
-            answerOptions.setValue(fallbackOptions);
         }
+
+        // Legg til ekstra alternativer hvis ikke nok
+        String[] extraOptions = {"Bear", "Wolf", "Tiger", "Lion", "Elephant", "Giraffe", "Zebra"};
+        for (String extra : extraOptions) {
+            if (!extra.equals(correctAnswer.name) && !alternatives.contains(extra)) {
+                alternatives.add(extra);
+            }
+        }
+
+        // Velg 2 tilfeldige alternativer
+        Collections.shuffle(alternatives);
+        int count = Math.min(2, alternatives.size());
+        for (int i = 0; i < count; i++) {
+            options.add(alternatives.get(i));
+        }
+
+        // Fyll opp til 3 hvis nødvendig
+        while (options.size() < 3) {
+            options.add("Animal " + options.size());
+        }
+
+        Collections.shuffle(options);
+        return options;
     }
 
+    // Behandler brukerens svar og går til neste spørsmål
     public void answerQuestion(String selectedAnswer) {
-        if (correctAnswer != null && correctAnswer.name.equals(selectedAnswer)) {
-            int currentScore = score.getValue() != null ? score.getValue() : 0;
-            score.setValue(currentScore + 1);
-            Log.d(TAG, "Correct answer! Score: " + (currentScore + 1));
-        } else {
-            Log.d(TAG, "Wrong answer. Selected: " + selectedAnswer + ", Correct: " +
-                    (correctAnswer != null ? correctAnswer.name : "null"));
+        if (correctAnswer == null) {
+            Log.w(TAG, "Ingen aktivt spørsmål å svare på");
+            return;
         }
 
-        // Move to next question
+        boolean isCorrect = correctAnswer.name.equals(selectedAnswer);
+
+        if (isCorrect) {
+            int currentScore = score.getValue() != null ? score.getValue() : 0;
+            score.setValue(currentScore + 1);
+            Log.d(TAG, "Riktig svar! Score: " + (currentScore + 1));
+        } else {
+            Log.d(TAG, "Feil svar. Riktig: " + correctAnswer.name + ", Valgt: " + selectedAnswer);
+        }
+
         generateNextQuestion();
     }
 
+    // Avslutter quizen og markerer den som ferdig
     private void endQuiz() {
-        Log.d(TAG, "Quiz finished. Final score: " + score.getValue());
+        Log.d(TAG, "Quiz ferdig. Endelig score: " + score.getValue());
         quizFinished.setValue(true);
     }
 
+    // Starter quiz på nytt hvis den er ferdig
+    public void restartQuizIfNeeded() {
+        if (Boolean.TRUE.equals(quizFinished.getValue())) {
+            Log.d(TAG, "Starter quiz på nytt");
+            quizInitialized = false;
+            startQuiz();
+        }
+    }
+
+    // Returnerer LiveData for gjeldende bilde
     public LiveData<String> getCurrentImage() {
         return currentImage;
     }
 
+    // Returnerer LiveData for svaralternativer
     public LiveData<List<String>> getAnswerOptions() {
         return answerOptions;
     }
 
+    // Returnerer LiveData for score
     public LiveData<Integer> getScore() {
         return score;
     }
 
+    // Returnerer LiveData for quiz status
     public LiveData<Boolean> isQuizFinished() {
         return quizFinished;
     }
 
+    // Returnerer riktig svar for gjeldende spørsmål (for testing)
     public String getCurrentCorrectAnswer() {
         return correctAnswer != null ? correctAnswer.name : null;
     }
 
-    // Add this method for testing
+    // Setter test-spørsmål for automatiserte tester
     public void setTestItem(String imageUri, String correctAnswerText) {
-        // For testing only
         correctAnswer = new GalleryItem(correctAnswerText, imageUri);
         currentImage.setValue(imageUri);
 
@@ -235,14 +231,17 @@ public class QuizViewModel extends AndroidViewModel {
         options.add("Wrong Answer 2");
 
         answerOptions.setValue(options);
+        quizInitialized = true;
+        Log.d(TAG, "Test-item satt: " + correctAnswerText);
     }
 
+    // Rydder opp observers når ViewModel blir ødelagt
     @Override
     protected void onCleared() {
         super.onCleared();
-        // Clean up observer when ViewModel is cleared
         if (galleryItemsObserver != null) {
             repository.getAllGalleryItems().removeObserver(galleryItemsObserver);
         }
+        Log.d(TAG, "QuizViewModel ryddet opp");
     }
 }
