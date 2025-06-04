@@ -19,14 +19,14 @@ public class GalleryViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> sortAscending = new MutableLiveData<>(null);
     private final MediatorLiveData<List<GalleryItem>> currentGalleryItems = new MediatorLiveData<>();
 
-    // Initialiserer ViewModel med repository og setter opp data-observering
+
     public GalleryViewModel(@NonNull Application application) {
         super(application);
         repository = new GalleryRepository(application);
         setupDataObservation();
     }
 
-    // Setter opp automatisk sortering når data eller sorteringstilstand endres
+
     private void setupDataObservation() {
         currentGalleryItems.addSource(repository.getAllGalleryItems(), items -> {
             applySorting(items, sortAscending.getValue());
@@ -37,7 +37,7 @@ public class GalleryViewModel extends AndroidViewModel {
         });
     }
 
-    // Sorterer data basert på sorteringstilstand
+
     private void applySorting(List<GalleryItem> items, Boolean ascending) {
         if (items == null) return;
 
@@ -50,37 +50,37 @@ public class GalleryViewModel extends AndroidViewModel {
                 Collections.sort(result, (a, b) -> b.name.compareTo(a.name));
             }
         }
-        // Hvis ascending er null, beholder vi original rekkefølge
+
 
         currentGalleryItems.setValue(result);
     }
 
-    // Returnerer alle gallery items direkte fra repository (for bakoverkompatibilitet)
+
     public LiveData<List<GalleryItem>> getAllGalleryItems() {
         return repository.getAllGalleryItems();
     }
 
-    // Returnerer sorterte gallery items
+
     public LiveData<List<GalleryItem>> getSortedGalleryItems() {
         return currentGalleryItems;
     }
 
-    // Sorterer gallery items basert på ascending parameter
+
     public void sortGalleryItems(boolean ascending) {
         sortAscending.setValue(ascending);
     }
 
-    // Tilbakestiller til usortert tilstand
+
     public void resetSorting() {
         sortAscending.setValue(null);
     }
 
-    // Legger til nytt item i databasen
+
     public void insert(GalleryItem item) {
         repository.insert(item);
     }
 
-    // Sletter item fra databasen
+
     public void delete(GalleryItem item) {
         repository.delete(item);
     }

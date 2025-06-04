@@ -3,7 +3,6 @@ package no.hvl.quizzoblig2;
 import android.app.Instrumentation;
 import android.content.Intent;
 import android.net.Uri;
-
 import androidx.test.espresso.Espresso;
 import androidx.test.espresso.action.ViewActions;
 import androidx.test.espresso.contrib.RecyclerViewActions;
@@ -39,7 +38,6 @@ public class GalleryFragmentTest {
     private GalleryRepository repository;
     private FragmentScenario<GalleryFragment> scenario;
 
-    // Setter opp test-miljø med database data og fragment
     @Before
     public void setUp() throws InterruptedException {
         repository = new GalleryRepository(ApplicationProvider.getApplicationContext());
@@ -69,7 +67,6 @@ public class GalleryFragmentTest {
         Thread.sleep(1000);
     }
 
-    // Rydder opp etter tester
     @After
     public void tearDown() {
         Intents.release();

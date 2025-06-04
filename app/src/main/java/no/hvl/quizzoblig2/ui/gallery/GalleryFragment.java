@@ -45,7 +45,7 @@ public class GalleryFragment extends Fragment {
                 }
             });
 
-    // Gjenoppretter lagret sorteringstilstand ved fragment gjenopprettelse
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,7 +55,7 @@ public class GalleryFragment extends Fragment {
         }
     }
 
-    // Bygger og konfigurerer fragment UI
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_gallery, container, false);
@@ -67,7 +67,7 @@ public class GalleryFragment extends Fragment {
         return root;
     }
 
-    // Konfigurerer RecyclerView med adapter og layout manager
+
     private void setupRecyclerView(View root) {
         RecyclerView recyclerView = root.findViewById(R.id.recyclerViewGallery);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -80,7 +80,7 @@ public class GalleryFragment extends Fragment {
         });
     }
 
-    // Initialiserer ViewModel og setter opp data observering
+
     private void setupViewModel() {
         viewModel = new ViewModelProvider(this).get(GalleryViewModel.class);
 
@@ -96,7 +96,7 @@ public class GalleryFragment extends Fragment {
         }
     }
 
-    // Observerer usorterte items fra databasen
+
     private void observeUnsortedItems() {
         viewModel.getAllGalleryItems().observe(getViewLifecycleOwner(), galleryItems -> {
             if (galleryItems != null && !galleryItems.isEmpty()) {
@@ -108,7 +108,7 @@ public class GalleryFragment extends Fragment {
         });
     }
 
-    // Observerer sorterte items
+
     private void observeSortedItems() {
         viewModel.getSortedGalleryItems().observe(getViewLifecycleOwner(), items -> {
             if (items != null) {
@@ -117,7 +117,7 @@ public class GalleryFragment extends Fragment {
         });
     }
 
-    // Konfigurerer alle knapper med deres click listeners
+
     private void setupButtons(View root) {
         Button btnAdd = root.findViewById(R.id.btnAdd);
         Button btnSortAZ = root.findViewById(R.id.btnSortAZ);
