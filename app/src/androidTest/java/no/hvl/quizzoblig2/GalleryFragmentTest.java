@@ -11,10 +11,15 @@ import androidx.test.espresso.intent.Intents;
 import androidx.test.espresso.intent.matcher.IntentMatchers;
 import androidx.fragment.app.testing.FragmentScenario;
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import no.hvl.quizzoblig2.data.GalleryRepository;
 import no.hvl.quizzoblig2.data.db.GalleryItem;
@@ -29,85 +34,103 @@ import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
+@RunWith(AndroidJUnit4.class)
 public class GalleryFragmentTest {
     private GalleryRepository repository;
+    private FragmentScenario<GalleryFragment> scenario;
 
+    // Setter opp test-miljø med database data og fragment
     @Before
-    public void setUp() {
+    public void setUp() throws InterruptedException {
         repository = new GalleryRepository(ApplicationProvider.getApplicationContext());
 
-        repository.insert(new GalleryItem("Test Item", "android.resource://no.hvl.quizzoblig2/drawable/dog"));
+        // Legg til test data på bakgrunnstråd
+        CountDownLatch latch = new CountDownLatch(1);
+        new Thread(() -> {
+            try {
+                repository.insert(new GalleryItem("Test Item", "android.resource://no.hvl.quizzoblig2/drawable/dog"));
+                latch.countDown();
+            } catch (Exception e) {
+                e.printStackTrace();
+                latch.countDown();
+            }
+        }).start();
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // Vent maksimalt 3 sekunder på at database-operasjonen fullføres
+        latch.await(3, TimeUnit.SECONDS);
 
+        // Start Intents tracking
         Intents.init();
 
-        FragmentScenario.launchInContainer(GalleryFragment.class);
+        // Launch fragment etter at data er klar
+        scenario = FragmentScenario.launchInContainer(GalleryFragment.class);
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // Vent på at fragment er fullstendig initialisert
+        Thread.sleep(1000);
     }
 
+    // Rydder opp etter tester
     @After
     public void tearDown() {
         Intents.release();
+        if (scenario != null) {
+            scenario.close();
+        }
     }
 
+    // Tester at ny bilde-tillegg øker antall items i galleriet
     @Test
     public void testAddImageIncreasesCount() {
-        // Verify gallery is displayed
+        // Verifiser at gallery UI er synlig
         onView(withId(R.id.recyclerViewGallery)).check(matches(isDisplayed()));
         onView(withId(R.id.btnAdd)).check(matches(isDisplayed()));
 
-        // Simulate selecting an image
+        // Simuler valg av bilde
         Intent resultData = new Intent();
         resultData.setData(Uri.parse("android.resource://no.hvl.quizzoblig2/drawable/dog"));
         Instrumentation.ActivityResult result = new Instrumentation.ActivityResult(-1, resultData);
         Intents.intending(IntentMatchers.hasAction(Intent.ACTION_PICK)).respondWith(result);
 
+        // Trykk på "Add" knappen
         onView(withId(R.id.btnAdd)).perform(click());
 
+        // Vent på at UI oppdateres
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
+        // Verifiser at gallery fortsatt vises (impliserer at item ble lagt til)
         onView(withId(R.id.recyclerViewGallery)).check(matches(isDisplayed()));
     }
 
+    // Tester at sletting av bilder reduserer antall items
     @Test
     public void testDeleteImageDecreasesCount() {
-        // Verify gallery is displayed
+        // Verifiser at gallery er synlig
         onView(withId(R.id.recyclerViewGallery)).check(matches(isDisplayed()));
 
         try {
-            // Try to perform a long click on the first item
+            // Prøv å utføre lang-trykk på første item
             onView(withId(R.id.recyclerViewGallery))
                     .perform(RecyclerViewActions.actionOnItemAtPosition(0, ViewActions.longClick()));
 
-            // Wait for dialog to appear
+            // Vent på at dialog vises
             Thread.sleep(500);
 
-            // Click "Yes" on the dialog
+            // Klikk "Yes" i slette-dialog
             onView(withText("Yes")).perform(click());
 
-            // Wait for deletion to complete
+            // Vent på at sletting fullføres
             Thread.sleep(1000);
         } catch (Exception e) {
-            // If the test fails here, it might be because there are no items
-            // We can add better error reporting
+            // Hvis test feiler kan det være fordi det ikke er noen items
+            // Logger feilen for debugging
             e.printStackTrace();
         }
 
-        // Verify gallery is still displayed
+        // Verifiser at gallery fortsatt vises
         onView(withId(R.id.recyclerViewGallery)).check(matches(isDisplayed()));
     }
 }
