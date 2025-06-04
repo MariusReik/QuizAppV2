@@ -140,7 +140,6 @@ public class GalleryFragment extends Fragment {
         });
     }
 
-    // Viser bekreftelsesdialog for sletting av bilder
     private void showDeleteDialog(GalleryItem item) {
         new AlertDialog.Builder(getContext())
                 .setTitle("Delete Image")
@@ -150,13 +149,11 @@ public class GalleryFragment extends Fragment {
                 .show();
     }
 
-    // Åpner systemets bilde-velger
     private void openImagePicker() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         imagePickerLauncher.launch(intent);
     }
 
-    // Lagrer gjeldende sorteringstilstand for gjenopprettelse
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
